@@ -3,82 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Skip & Skim: The Golden Hour</title>
+    <title>Skip & Skim: Fim de Tarde</title>
     <style>
-        /* UI de Vidro Fosco (Glassmorphism) - Estilo Fotográfico/Natureza */
+        /* UI Aconchegante e Quente - Tons de Madeira e Pôr do Sol */
         :root {
-            --glass-bg: rgba(255, 255, 255, 0.15);
-            --glass-border: rgba(255, 255, 255, 0.4);
-            --text-color: #f0f0f0;
-            --accent: #ffb347; /* Cor do pôr do sol */
+            --glass-bg: rgba(60, 40, 20, 0.25);
+            --glass-border: rgba(255, 200, 150, 0.3);
+            --text-color: #fdf5e6;
+            --accent: #ff9d47; /* Laranja quente */
         }
 
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             overflow: hidden; background-color: #000;
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             touch-action: none; user-select: none; -webkit-user-select: none;
         }
 
-        /* Container do WebGL */
         #glcanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-
-        /* Interface Overlay */
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
 
         .glass-panel {
-            background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border); border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); color: var(--text-color);
+            background: var(--glass-bg); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--glass-border); border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); color: var(--text-color);
         }
 
         #hud { position: absolute; top: 20px; left: 20px; padding: 15px 25px; }
-        #hud h1 { margin: 0; font-size: clamp(20px, 4vw, 28px); font-weight: 300; text-transform: uppercase; letter-spacing: 2px; }
-        #hud h1 span { color: var(--accent); font-weight: 600; text-shadow: 0 0 10px rgba(255, 179, 71, 0.5); }
-        #hud p { margin: 8px 0 0 0; font-size: 14px; opacity: 0.9; letter-spacing: 1px; }
+        #hud h1 { margin: 0; font-size: clamp(20px, 4vw, 26px); font-weight: 400; letter-spacing: 1px; }
+        #hud h1 span { color: var(--accent); font-weight: 600; text-shadow: 0 0 10px rgba(255, 157, 71, 0.4); }
+        #hud p { margin: 8px 0 0 0; font-size: 14px; opacity: 0.85; }
 
         #shop-btn {
             position: absolute; top: 20px; right: 20px; pointer-events: auto;
-            padding: 12px 24px; font-size: 13px; text-transform: uppercase; letter-spacing: 2px; font-weight: bold;
+            padding: 12px 24px; font-size: 14px; letter-spacing: 1px; font-weight: 600;
             cursor: pointer; transition: all 0.3s ease; color: #fff;
         }
-        #shop-btn:hover { background: rgba(255, 255, 255, 0.25); transform: translateY(-2px); }
+        #shop-btn:hover { background: rgba(255, 200, 150, 0.2); transform: translateY(-2px); }
 
         #shop-menu {
             position: absolute; top: 80px; right: 20px; width: clamp(280px, 85vw, 340px);
-            padding: 25px; display: none; flex-direction: column; gap: 15px; pointer-events: auto;
+            padding: 20px; display: none; flex-direction: column; gap: 12px; pointer-events: auto;
         }
-        #shop-menu h3 { margin: 0 0 10px 0; text-align: center; font-weight: 300; letter-spacing: 3px; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px; }
+        #shop-menu h3 { margin: 0 0 10px 0; text-align: center; font-weight: 400; letter-spacing: 2px; border-bottom: 1px solid var(--glass-border); padding-bottom: 12px; }
 
         .upgrade {
             display: flex; justify-content: space-between; align-items: center;
-            background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+            background: rgba(0,0,0,0.15); padding: 15px; border-radius: 12px; cursor: pointer; transition: all 0.3s;
             border: 1px solid transparent;
         }
-        .upgrade:hover { background: rgba(0,0,0,0.4); border-color: var(--accent); }
+        .upgrade:hover { background: rgba(0,0,0,0.3); border-color: var(--accent); }
         .u-name { font-weight: 500; font-size: 14px; display: block; margin-bottom: 4px; }
         .u-cost { color: var(--accent); font-size: 12px; font-weight: bold; }
         .u-lvl { font-size: 12px; background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 12px; }
 
-        /* Anel de Arremesso (Medidor) */
+        /* Anel de Arremesso Suave */
         #aim-ring {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 100px; height: 100px; border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%;
+            width: 120px; height: 120px; border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 50%;
             display: none; justify-content: center; align-items: center; pointer-events: none;
         }
         #aim-pulse {
             width: 10px; height: 10px; background: var(--accent); border-radius: 50%;
-            box-shadow: 0 0 20px var(--accent);
+            box-shadow: 0 0 25px var(--accent); transition: background 0.3s;
         }
         
         #loading {
-            position: absolute; top:0; left:0; width:100%; height:100%; background:#111; color:#fff;
+            position: absolute; top:0; left:0; width:100%; height:100%; background:#1a1410; color:#ff9d47;
             display:flex; justify-content:center; align-items:center; z-index: 100; flex-direction: column;
-            font-family: monospace; letter-spacing: 2px;
+            font-weight: 300; letter-spacing: 2px;
         }
     </style>
     
-    <!-- Import Maps para carregar o ecossistema Three.js nativamente sem bundlers -->
     <script type="importmap">
         {
             "imports": {
@@ -91,33 +87,31 @@
 <body>
 
     <div id="loading">
-        <h2 style="font-weight: 300;">RENDERIZANDO O MUNDO...</h2>
-        <p style="opacity: 0.5;">Construindo Shaders & Física</p>
+        <h2>PREPARANDO O LAGO...</h2>
+        <p style="opacity: 0.6;">Sente-se e relaxe</p>
     </div>
 
-    <!-- Canvas WebGL -->
     <div id="glcanvas"></div>
 
-    <!-- Camada de Interface -->
     <div id="ui-layer">
         <div id="hud" class="glass-panel">
-            <h1>Âmbar: <span id="currency-display">0</span></h1>
+            <h1>Seixos: <span id="currency-display">0</span></h1>
             <p>Distância: <span id="dist-display">0</span>m | Saltos: <span id="bounce-display">0</span></p>
         </div>
 
-        <button id="shop-btn" class="glass-panel">HABILIDADES</button>
+        <button id="shop-btn" class="glass-panel">RELAXAR (LOJA)</button>
         <div id="shop-menu" class="glass-panel">
-            <h3>APRIMORAMENTOS</h3>
+            <h3>MELHORIAS</h3>
             <div class="upgrade" onclick="buyUpgrade('impulse')">
-                <div><span class="u-name">Impulso Cinético (Clique no Ar)</span><span class="u-cost" id="cost-impulse">Âmbar: 10</span></div>
+                <div><span class="u-name">Brisa Leve (Toque no ar)</span><span class="u-cost" id="cost-impulse">Seixos: 10</span></div>
                 <span class="u-lvl" id="lvl-impulse">Lvl 0</span>
             </div>
             <div class="upgrade" onclick="buyUpgrade('aerodynamics')">
-                <div><span class="u-name">Aerodinâmica (Menos Arrasto)</span><span class="u-cost" id="cost-aerodynamics">Âmbar: 50</span></div>
+                <div><span class="u-name">Pedra Polida (Deslize)</span><span class="u-cost" id="cost-aerodynamics">Seixos: 50</span></div>
                 <span class="u-lvl" id="lvl-aerodynamics">Lvl 0</span>
             </div>
             <div class="upgrade" onclick="buyUpgrade('wind')">
-                <div><span class="u-name">Corrente de Vento (Passiva)</span><span class="u-cost" id="cost-wind">Âmbar: 200</span></div>
+                <div><span class="u-name">Vento de Fazenda (Passiva)</span><span class="u-cost" id="cost-wind">Seixos: 200</span></div>
                 <span class="u-lvl" id="lvl-wind">Lvl 0</span>
             </div>
         </div>
@@ -133,25 +127,28 @@ import { Water } from 'three/addons/objects/Water.js';
 import { Sky } from 'three/addons/objects/Sky.js';
 
 /**
- * 1. CONFIGURAÇÃO DA ENGINE GRÁFICA & AMBIENTE (The Art Engineering)
+ * 1. CONFIGURAÇÃO DA ENGINE E AMBIENTE (O Sítio)
  */
 const container = document.getElementById('glcanvas');
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-renderer.setPixelRatio(window.devicePixelRatio);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Otimização p/ mobile
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.toneMapping = THREE.ACESFilmicToneMapping; // Realismo cinematográfico
-renderer.toneMappingExposure = 0.5;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.65; // Um pouco mais claro e convidativo
 container.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 20000);
-camera.position.set(0, 30, -50); // Câmera atrás do local de lançamento
+// Adicionando névoa quente (marrom/alaranjada) para dar a sensação de distância e umidade de lago
+scene.fog = new THREE.FogExp2(0x8a5a3a, 0.0008); 
+
+// Câmera mais baixa para valorizar os pulos contra o horizonte
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 20000);
+camera.position.set(0, 8, -30); 
 
 const sun = new THREE.Vector3();
 
-// --- SHADER DE ÁGUA REALISTA ---
+// --- ÁGUA CALMA DE LAGO ---
 const waterGeometry = new THREE.PlaneGeometry(10000, 10000);
-// Usamos uma textura normal de água hospedada no repositório oficial da Three.js
 const waterNormals = new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/waternormals.jpg', function(texture) {
     texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 });
@@ -160,26 +157,26 @@ const water = new Water(waterGeometry, {
     textureWidth: 512, textureHeight: 512,
     waterNormals: waterNormals,
     sunDirection: new THREE.Vector3(),
-    sunColor: 0xffffff,
-    waterColor: 0x001e0f, // Cor profunda do lago
-    distortionScale: 3.7,
+    sunColor: 0xffeebb,
+    waterColor: 0x1e2e1a, // Verde escuro acastanhado (Lago natural de sítio)
+    distortionScale: 1.2, // Água muito mais calma e reflexiva
     fog: scene.fog !== undefined
 });
 water.rotation.x = -Math.PI / 2;
 scene.add(water);
 
-// --- SHADER DO CÉU (SKYBOX VOLUMÉTRICA) ---
+// --- CÉU DOURADO DE FIM DE TARDE ---
 const sky = new Sky();
 sky.scale.setScalar(10000);
 scene.add(sky);
 const skyUniforms = sky.material.uniforms;
-skyUniforms['turbidity'].value = 10;
-skyUniforms['rayleigh'].value = 2;
+skyUniforms['turbidity'].value = 4.5; // Ar um pouco mais limpo
+skyUniforms['rayleigh'].value = 1.5;
 skyUniforms['mieCoefficient'].value = 0.005;
 skyUniforms['mieDirectionalG'].value = 0.8;
 
-// Parâmetros do Pôr do Sol
-const elevation = 2; // Sol baixo
+// Posição do Sol - 4 graus de elevação (Luz dourada maravilhosa)
+const elevation = 4; 
 const azimuth = 180;
 const phi = THREE.MathUtils.degToRad(90 - elevation);
 const theta = THREE.MathUtils.degToRad(azimuth);
@@ -189,55 +186,85 @@ sky.material.uniforms['sunPosition'].value.copy(sun);
 water.material.uniforms['sunDirection'].value.copy(sun).normalize();
 scene.environment = new THREE.PMREMGenerator(renderer).fromScene(sky).texture;
 
+// --- COLINAS / ÁRVORES AO FUNDO (Procedural) ---
+// Criamos silhuetas de morros cobertos de vegetação ao longe
+const hillMaterial = new THREE.MeshLambertMaterial({ color: 0x1a2b15, fog: true });
+const ambientLight = new THREE.AmbientLight(0xffeedd, 0.2); // Luz de preenchimento quente
+scene.add(ambientLight);
+const dirLight = new THREE.DirectionalLight(0xffbb77, 1);
+dirLight.position.copy(sun);
+scene.add(dirLight);
+
+for(let i = 0; i < 25; i++) {
+    // Espalha os morros num semi-círculo bem distante para frente (+Z)
+    let radius = 1200 + Math.random() * 500;
+    let angle = (Math.random() - 0.5) * Math.PI * 1.2; 
+    let hillX = Math.sin(angle) * radius;
+    let hillZ = Math.cos(angle) * radius + 500;
+    
+    // Geometria arredondada para simular copa de árvores / morros de sítio
+    let hGeo = new THREE.SphereGeometry(150 + Math.random()*200, 16, 16);
+    let hill = new THREE.Mesh(hGeo, hillMaterial);
+    hill.position.set(hillX, -50 + (Math.random()*50), hillZ);
+    // Achata um pouco
+    hill.scale.set(1, 0.6, 1);
+    scene.add(hill);
+}
+
+// --- PARTÍCULAS ATMOSFÉRICAS (Pólen / Vagalumes) ---
+const dustGeo = new THREE.BufferGeometry();
+const dustCount = 400;
+const dustPos = new Float32Array(dustCount * 3);
+for(let i=0; i<dustCount; i++) {
+    dustPos[i*3] = (Math.random() - 0.5) * 100;
+    dustPos[i*3+1] = Math.random() * 30;
+    dustPos[i*3+2] = (Math.random() - 0.5) * 100 + 40; // Mais focados na frente da câmera
+}
+dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+// Partículas amarelas suaves
+const dustMat = new THREE.PointsMaterial({ color: 0xffcc88, size: 0.15, transparent: true, opacity: 0.6 });
+const dustSystem = new THREE.Points(dustGeo, dustMat);
+scene.add(dustSystem);
+
 /**
- * 2. GERAÇÃO PROCEDURAL DE TEXTURA DA PEDRA (Para realismo sem arquivos extras)
+ * 2. A PEDRA (Textura Simples e Polida)
  */
 function createRockTexture() {
     const cvs = document.createElement('canvas');
-    cvs.width = 256; cvs.height = 256;
+    cvs.width = 64; cvs.height = 64;
     const ctx = cvs.getContext('2d');
-    
-    // Ruído básico para parecer uma rocha polida de rio
-    for (let x = 0; x < 256; x++) {
-        for (let y = 0; y < 256; y++) {
-            let val = Math.floor(Math.random() * 50) + 50; // Tons escuros/acinzentados
-            ctx.fillStyle = `rgb(${val}, ${val}, ${val})`;
-            ctx.fillRect(x, y, 1, 1);
-        }
+    ctx.fillStyle = '#4a443e'; // Pedra mais terrosa
+    ctx.fillRect(0, 0, 64, 64);
+    for (let i = 0; i < 100; i++) {
+        ctx.fillStyle = Math.random() > 0.5 ? '#3a342e' : '#5a544e';
+        ctx.fillRect(Math.random()*64, Math.random()*64, 2, 2);
     }
-    const texture = new THREE.CanvasTexture(cvs);
-    return texture;
+    return new THREE.CanvasTexture(cvs);
 }
-
-// Geometria da Pedra (Ligeiramente deformada para não ser uma esfera perfeita)
-const rockGeo = new THREE.IcosahedronGeometry(2, 2);
+const rockGeo = new THREE.IcosahedronGeometry(1.2, 2); // Pedra um pouco menor
 const pos = rockGeo.attributes.position;
 for (let i = 0; i < pos.count; i++) {
-    pos.setY(i, pos.getY(i) * 0.5); // Achatando a pedra para ficar no formato de "skimming stone"
+    pos.setY(i, pos.getY(i) * 0.4); // Pedra bem achatada para deslizar melhor
 }
 rockGeo.computeVertexNormals();
-
-const rockMat = new THREE.MeshStandardMaterial({ 
-    map: createRockTexture(), 
-    roughness: 0.6, metalness: 0.1, color: 0x555555 
-});
+const rockMat = new THREE.MeshStandardMaterial({ map: createRockTexture(), roughness: 0.4, metalness: 0.1 });
 const stoneMesh = new THREE.Mesh(rockGeo, rockMat);
 scene.add(stoneMesh);
 
 /**
- * 3. SISTEMA DE PARTÍCULAS (Respingos e Vento)
+ * 3. RESPINGOS DE ÁGUA
  */
 const splashGeo = new THREE.BufferGeometry();
-const splashCount = 100;
+const splashCount = 80;
 const splashPos = new Float32Array(splashCount * 3);
 const splashVels = [];
 splashGeo.setAttribute('position', new THREE.BufferAttribute(splashPos, 3));
-const splashMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.5, transparent: true, opacity: 0.8 });
+const splashMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.4, transparent: true, opacity: 0.6 });
 const splashes = new THREE.Points(splashGeo, splashMat);
 scene.add(splashes);
 
 /**
- * 4. FÍSICA E ESTADO DO JOGO (Incremental Logic)
+ * 4. FÍSICA FLUTUANTE E RELAXANTE (O Segredo do Pacing)
  */
 let gameState = { currency: 0, state: 'IDLE', aimPulse: 0, aimGrowing: true };
 let upgrades = {
@@ -247,22 +274,23 @@ let upgrades = {
 };
 
 const physics = {
-    x: 0, y: 15, z: 0, // Posição
-    vx: 0, vy: 0, // Velocidade
+    x: 0, y: 10, z: 0,
+    vx: 0, vy: 0, vz: 0,
     bounces: 0, distance: 0,
-    gravity: 0.4,
-    waterBounciness: 0.55,
-    waterFriction: 0.75, // Velocidade horizontal perdida no impacto
+    // GRAVIDADE REDUZIDA: Causa a sensação "floaty" e gostosa
+    gravity: 0.08, 
+    // PEDRA PULA MAIS: Retém mais energia ao bater na água
+    waterBounciness: 0.72, 
+    // DESLIZA MAIS: Perde pouca velocidade horizontal no impacto
+    waterFriction: 0.88, 
     active: false,
     windActive: false,
     windTimer: 0
 };
 
-stoneMesh.position.set(0, 15, 0);
-
 // LOAD/SAVE
 function loadData() {
-    const saved = localStorage.getItem('skipGoldenSave');
+    const saved = localStorage.getItem('skipSitioSave');
     if (saved) {
         const p = JSON.parse(saved);
         gameState.currency = p.currency || 0;
@@ -270,7 +298,7 @@ function loadData() {
     }
     updateUI();
 }
-function saveData() { localStorage.setItem('skipGoldenSave', JSON.stringify({ currency: gameState.currency, upgrades })); }
+function saveData() { localStorage.setItem('skipSitioSave', JSON.stringify({ currency: gameState.currency, upgrades })); }
 window.buyUpgrade = function(type) {
     let upg = upgrades[type];
     if (gameState.currency >= Math.floor(upg.cost)) {
@@ -284,42 +312,42 @@ window.buyUpgrade = function(type) {
 
 function triggerSplash(x, y, z) {
     for (let i = 0; i < splashCount; i++) {
-        splashPos[i*3] = x + (Math.random() - 0.5) * 2;
+        splashPos[i*3] = x + (Math.random() - 0.5);
         splashPos[i*3+1] = y;
-        splashPos[i*3+2] = z + (Math.random() - 0.5) * 2;
+        splashPos[i*3+2] = z + (Math.random() - 0.5);
         splashVels[i] = {
-            vx: (Math.random() - 0.5) * 2,
-            vy: Math.random() * 3 + 1,
-            vz: (Math.random() - 0.5) * 2
+            vx: (Math.random() - 0.5) * 1.5,
+            vy: Math.random() * 2 + 0.5,
+            vz: (Math.random() - 0.5) * 1.5
         };
     }
-    splashes.geometry.attributes.position.needsUpdate = true;
 }
 
 function launchStone(accuracy) {
-    physics.x = 0; physics.y = 10; physics.z = 0;
-    // Força máxima se accuracy for 1 (perfeito)
-    physics.vx = 0; 
-    physics.vz = 15 + (accuracy * 35); // Lançamento em Z positivo (para o horizonte)
-    physics.vy = Math.max(-2, -5 + (accuracy * 2)); 
+    physics.x = 0; physics.y = 8; physics.z = 0;
+    
+    // VELOCIDADE REDUZIDA: Fica mais fácil de acompanhar visualmente, mais relaxante
+    let power = 0.5 + (accuracy * 0.5); // Garante um mínimo de força decente
+    physics.vz = 8 + (power * 16); 
+    physics.vy = -1 - (power * 1.5); // Ângulo suave para baixo
+    
     physics.bounces = 0; physics.distance = 0;
     physics.active = true;
     physics.windActive = false;
 }
 
 /**
- * 5. CONTROLES DA INTERFACE
+ * 5. CONTROLES E UI
  */
 function updateUI() {
     document.getElementById('currency-display').innerText = gameState.currency.toLocaleString();
     document.getElementById('dist-display').innerText = Math.floor(physics.distance);
     document.getElementById('bounce-display').innerText = physics.bounces;
-
     for (let key in upgrades) {
         let eC = document.getElementById(`cost-${key}`);
         let eL = document.getElementById(`lvl-${key}`);
         if (eC && eL) {
-            eC.innerText = `Âmbar: ${Math.floor(upgrades[key].cost).toLocaleString()}`;
+            eC.innerText = `Seixos: ${Math.floor(upgrades[key].cost).toLocaleString()}`;
             eL.innerText = `Lvl ${upgrades[key].level}`;
         }
     }
@@ -342,16 +370,15 @@ window.addEventListener('pointerdown', (e) => {
         gameState.aimPulse = 0;
         aimRing.style.display = 'flex';
     } else if (gameState.state === 'FLYING' && upgrades.impulse.level > 0 && !physics.windActive) {
-        // Impulso mid-air (Intervenção manual)
-        physics.vy = 4 + (upgrades.impulse.level * 0.5);
-        physics.vz += 2 + (upgrades.impulse.level * 0.5);
-        triggerSplash(physics.x, physics.y, physics.z); // Efeito no ar
+        // Brisa Leve (Toque suave no ar)
+        physics.vy = 2.5 + (upgrades.impulse.level * 0.3); // Pulo etéreo e macio
+        physics.vz += 1 + (upgrades.impulse.level * 0.3);
+        triggerSplash(physics.x, physics.y, physics.z); 
     }
 });
 
 window.addEventListener('pointerup', () => {
     if (gameState.state === 'CHARGING') {
-        // Pulse vai de 0 a 100. Perfeito é próximo de 100.
         let accuracy = gameState.aimPulse / 100;
         launchStone(accuracy);
         gameState.state = 'FLYING';
@@ -367,48 +394,61 @@ window.addEventListener('resize', () => {
 });
 
 /**
- * 6. LOOP PRINCIPAL (Renderização e Física 3D)
+ * 6. LOOP PRINCIPAL - TEMPO E ANIMAÇÃO
  */
 const clock = new THREE.Clock();
 
 function animate() {
     requestAnimationFrame(animate);
-    const time = performance.now() * 0.001;
+    const delta = clock.getDelta();
+    const time = clock.getElapsedTime();
 
-    // Animação da Água
-    water.material.uniforms['time'].value += 1.0 / 60.0;
+    // Água extremamente calma
+    water.material.uniforms['time'].value += delta * 0.2;
 
-    // Animação do Medidor de Mira
+    // Animação do Medidor de Mira (Mais lento para respirar junto)
     if (gameState.state === 'CHARGING') {
+        let speed = 1.2;
         if (gameState.aimGrowing) {
-            gameState.aimPulse += 2;
+            gameState.aimPulse += speed;
             if (gameState.aimPulse >= 100) gameState.aimGrowing = false;
         } else {
-            gameState.aimPulse -= 2;
+            gameState.aimPulse -= speed;
             if (gameState.aimPulse <= 10) gameState.aimGrowing = true;
         }
         aimPulse.style.width = gameState.aimPulse + '%';
         aimPulse.style.height = gameState.aimPulse + '%';
-        // Muda de cor quando perfeito (acima de 90%)
-        aimPulse.style.background = gameState.aimPulse > 90 ? '#00ffcc' : 'var(--accent)';
+        aimPulse.style.background = gameState.aimPulse > 85 ? '#fff' : 'var(--accent)';
+        aimRing.style.borderColor = `rgba(255, 255, 255, ${gameState.aimPulse / 100})`;
     }
 
-    // FÍSICA DA PEDRA
+    // Pólen / Vagalumes flutuando na tela
+    const dPos = dustSystem.geometry.attributes.position.array;
+    for(let i=0; i<dustCount; i++) {
+        dPos[i*3+1] += Math.sin(time + i) * 0.01; // Flutuação em Y
+        dPos[i*3] += Math.cos(time * 0.5 + i) * 0.01; // Deslocamento em X
+    }
+    dustSystem.geometry.attributes.position.needsUpdate = true;
+    // O sistema de pólen acompanha a câmera para sempre estar em volta do jogador
+    dustSystem.position.z = camera.position.z;
+    dustSystem.position.x = camera.position.x;
+
+    // FÍSICA E ATUALIZAÇÃO DA PEDRA
     if (physics.active) {
         // Rotação da pedra
-        stoneMesh.rotation.x += physics.vz * 0.05;
-        stoneMesh.rotation.z += (Math.random() - 0.5) * 0.1;
+        stoneMesh.rotation.x += physics.vz * 0.02;
 
-        let drag = 0.995 + (upgrades.aerodynamics.level * 0.001);
-        if (drag > 0.999) drag = 0.999;
+        let drag = 0.997 + (upgrades.aerodynamics.level * 0.0005);
+        if (drag > 0.9995) drag = 0.9995;
 
         if (physics.windActive) {
             physics.windTimer--;
-            physics.y = 15 + Math.sin(time * 5) * 2; // Flutuação
-            physics.vz = 25; // Velocidade de voo do vento
+            physics.y = 8 + Math.sin(time * 3) * 1.5; 
+            physics.vz = 15; // Velocidade suave carregada pelo vento
             physics.vy = 0;
             if (physics.windTimer <= 0) physics.windActive = false;
         } else {
+            // Aplicando gravidade e atrito do ar frame a frame
             physics.vy -= physics.gravity;
             physics.vz *= drag;
         }
@@ -418,58 +458,59 @@ function animate() {
         physics.z += physics.vz;
         physics.distance = Math.max(0, physics.z);
 
-        // Colisão com a Água (Y=0)
+        // IMPACTO COM A ÁGUA
         if (physics.y <= 0) {
             physics.y = 0;
-            if (physics.vz > 5) { // Condição de quique
+            if (physics.vz > 3) { // Condição mínima para quicar
                 physics.vy = Math.abs(physics.vy) * physics.waterBounciness;
                 physics.vz *= physics.waterFriction;
                 physics.bounces++;
                 triggerSplash(physics.x, 0, physics.z);
 
-                // Chance de corrente de vento (Passiva)
                 let windChance = Math.min(0.4, upgrades.wind.level * 0.05);
                 if (Math.random() < windChance && !physics.windActive) {
                     physics.windActive = true;
-                    physics.windTimer = 80; // duração em frames
+                    physics.windTimer = 90; // Carrega suavemente
                 }
             } else {
-                // Afunda e termina a rodada
+                // Afunda calmamente
                 physics.active = false;
                 triggerSplash(physics.x, 0, physics.z);
                 
-                // Calcula Recompensas (Distância + Quiques)
-                let earned = Math.floor((physics.distance / 20) * (1 + physics.bounces * 0.2));
+                let earned = Math.floor((physics.distance / 15) * (1 + physics.bounces * 0.25));
                 gameState.currency += earned;
                 saveData();
                 updateUI();
                 
-                setTimeout(() => { gameState.state = 'IDLE'; }, 2000);
+                // Espera um pouco para o jogador admirar a paisagem antes de resetar
+                setTimeout(() => { gameState.state = 'IDLE'; }, 3000);
             }
         }
         
         stoneMesh.position.set(physics.x, physics.y, physics.z);
         
-        // Câmera persegue a pedra suavemente
-        camera.position.z += (physics.z - 50 - camera.position.z) * 0.1;
-        camera.position.y += (Math.max(15, physics.y + 10) - camera.position.y) * 0.05;
-        camera.lookAt(stoneMesh.position.x, 0, stoneMesh.position.z + 50);
+        // CÂMERA SUAVE (Lerp)
+        // Câmera persegue bem de leve, valorizando a vista do lago
+        camera.position.z += (physics.z - 30 - camera.position.z) * 0.03;
+        camera.position.y += (Math.max(6, physics.y + 4) - camera.position.y) * 0.03;
+        camera.lookAt(stoneMesh.position.x, physics.y * 0.2, stoneMesh.position.z + 20);
+
     } else if (gameState.state === 'IDLE') {
-        // Câmera volta para a base
-        stoneMesh.position.set(0, 10, 0);
-        camera.position.z += (-50 - camera.position.z) * 0.05;
-        camera.position.y += (30 - camera.position.y) * 0.05;
-        camera.lookAt(0, 0, 50);
+        // Retorno lento e cinematográfico para a base
+        stoneMesh.position.set(0, 5, 0);
+        camera.position.z += (-20 - camera.position.z) * 0.02;
+        camera.position.y += (8 - camera.position.y) * 0.02;
+        camera.lookAt(0, 0, 40); // Foca levemente no horizonte
     }
 
-    // Animação das Partículas (Respingos)
+    // Animação das Partículas de Respingos
     const pos = splashes.geometry.attributes.position.array;
     for (let i = 0; i < splashCount; i++) {
-        if (pos[i*3+1] > -10) { // Se estiver acima do fundo
+        if (pos[i*3+1] > -5) {
             pos[i*3] += splashVels[i] ? splashVels[i].vx : 0;
             pos[i*3+1] += splashVels[i] ? splashVels[i].vy : 0;
             pos[i*3+2] += splashVels[i] ? splashVels[i].vz : 0;
-            if(splashVels[i]) splashVels[i].vy -= 0.2; // Gravidade da partícula
+            if(splashVels[i]) splashVels[i].vy -= 0.1; // Gravidade da gota
         }
     }
     splashes.geometry.attributes.position.needsUpdate = true;
@@ -477,7 +518,6 @@ function animate() {
     renderer.render(scene, camera);
 }
 
-// Remover tela de loading e iniciar
 document.getElementById('loading').style.display = 'none';
 loadData();
 animate();
