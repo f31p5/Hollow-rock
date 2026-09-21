@@ -3,98 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Skip & Skim: Idle Ripples</title>
+    <title>Rippleloop: Echoes</title>
     <style>
-        /* CSS Otimizado para Mobile e Performance */
+        /* CSS Rippleloop Aesthetic - Ethereal, Dark & Glowing */
+        :root {
+            --glow-cyan: #00f3ff;
+            --glow-purple: #b052ff;
+            --glass-bg: rgba(10, 20, 35, 0.6);
+            --glass-border: rgba(0, 243, 255, 0.2);
+        }
+
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            overflow: hidden; background-color: #87CEEB; 
-            font-family: 'Courier New', Courier, monospace; 
-            touch-action: none; /* Previne scroll e zoom no mobile */
-            user-select: none; /* Previne seleção acidental de texto */
-            -webkit-user-select: none;
+            overflow: hidden; background-color: #050914; 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            touch-action: none; user-select: none; -webkit-user-select: none;
+            color: #fff;
         }
         
         #gameCanvas { display: block; width: 100%; height: 100%; }
         
-        #hud { position: absolute; top: 15px; left: 15px; color: #fff; text-shadow: 2px 2px 0 #000; pointer-events: none; }
-        #hud h1 { margin: 0; font-size: clamp(20px, 4vw, 28px); }
-        #hud p { margin: 5px 0 0 0; font-size: clamp(14px, 3vw, 18px); }
+        /* Glassmorphism HUD */
+        #hud { 
+            position: absolute; top: 20px; left: 20px; 
+            background: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border); border-radius: 12px;
+            padding: 15px 25px; pointer-events: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        #hud h1 { margin: 0; font-size: clamp(18px, 4vw, 24px); font-weight: 300; letter-spacing: 1px; color: var(--glow-cyan); text-shadow: 0 0 10px var(--glow-cyan); }
+        #hud p { margin: 8px 0 0 0; font-size: clamp(12px, 3vw, 14px); opacity: 0.8; letter-spacing: 0.5px; }
         
-        #meter-container { position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%); width: clamp(150px, 40vw, 250px); height: 24px; background: #222; border: 3px solid #fff; border-radius: 12px; overflow: hidden; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        #meter-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #ff4444, #ffeb3b, #4caf50, #ffeb3b, #ff4444); }
-        #meter-cursor { position: absolute; top: 0; bottom: 0; width: 4px; background: #000; left: 50%; }
+        /* Modern Glass Button */
+        #shop-btn { 
+            position: absolute; top: 20px; right: 20px; 
+            padding: 12px 24px; font-size: 14px; font-weight: 600; letter-spacing: 1px;
+            cursor: pointer; background: var(--glass-bg); color: var(--glow-cyan);
+            border: 1px solid var(--glass-border); border-radius: 20px; 
+            backdrop-filter: blur(10px); transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.1);
+        }
+        #shop-btn:active { transform: scale(0.95); box-shadow: 0 0 20px var(--glow-cyan); background: rgba(0, 243, 255, 0.1); }
+        
+        /* Glass Shop Menu */
+        #shop-menu { 
+            position: absolute; top: 80px; right: 20px; width: clamp(280px, 85vw, 350px); max-height: 75vh; overflow-y: auto; 
+            background: var(--glass-bg); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border); padding: 20px; 
+            display: none; flex-direction: column; gap: 15px; border-radius: 16px; z-index: 10;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+        #shop-menu h3 { margin: 0 0 15px 0; text-align: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px; font-weight: 300; letter-spacing: 2px; color: #fff; }
+        
+        .upgrade { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: rgba(255,255,255,0.03); padding: 15px; 
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; cursor: pointer; transition: all 0.2s; 
+        }
+        .upgrade:active { background: rgba(0, 243, 255, 0.1); border-color: var(--glow-cyan); transform: scale(0.98); }
+        .u-name { font-weight: 400; font-size: 15px; display: block; margin-bottom: 4px; color: #eaeaea; }
+        .u-cost { color: var(--glow-cyan); font-size: 13px; font-weight: bold; }
+        .u-lvl { font-size: 12px; opacity: 0.6; background: rgba(0,0,0,0.5); padding: 4px 8px; border-radius: 10px; }
 
-        #shop-btn { position: absolute; top: 15px; right: 15px; padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; background: #fff; border: 2px solid #000; border-radius: 8px; box-shadow: 2px 2px 0 #000; transition: transform 0.1s; }
-        #shop-btn:active { transform: translate(2px, 2px); box-shadow: 0px 0px 0 #000; }
-        
-        #shop-menu { position: absolute; top: 70px; right: 15px; width: clamp(250px, 80vw, 320px); max-height: 80vh; overflow-y: auto; background: rgba(20,20,20,0.95); color: white; border: 2px solid #fff; padding: 15px; display: none; flex-direction: column; gap: 12px; border-radius: 8px; z-index: 10; }
-        #shop-menu h3 { margin: 0 0 10px 0; text-align: center; border-bottom: 1px solid #555; padding-bottom: 10px; }
-        
-        .upgrade { display: flex; justify-content: space-between; align-items: center; background: #333; padding: 15px 12px; border: 1px solid #555; border-radius: 6px; cursor: pointer; }
-        .upgrade:active { background: #555; }
-        .u-name { font-weight: bold; font-size: 14px; display: block; }
-        .u-cost { color: #ffeb3b; font-size: 14px; }
+        .reset-btn { margin-top: 10px; padding: 12px; background: rgba(255, 50, 50, 0.1); color: #ff6b6b; border: 1px solid rgba(255, 50, 50, 0.3); border-radius: 10px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div id="hud">
-        <h1>Moedas: <span id="currency-display">0</span></h1>
-        <p>Distância: <span id="dist-display">0</span>m | Quiques: <span id="bounce-display">0</span></p>
+        <h1>Ecos: <span id="currency-display">0</span></h1>
+        <p>Distância: <span id="dist-display">0</span>m | Ondulações: <span id="bounce-display">0</span></p>
     </div>
 
-    <button id="shop-btn">Loja</button>
+    <button id="shop-btn">RESSONÂNCIA</button>
     <div id="shop-menu">
-        <h3>Melhorias</h3>
+        <h3>Melhorias de Fluxo</h3>
         <div class="upgrade" onclick="buyUpgrade('impulse')">
-            <div><span class="u-name">Impulso (Clique no ar)</span><span class="u-cost" id="cost-impulse">Preço: 10</span></div>
-            <span id="lvl-impulse">Lvl 0</span>
+            <div><span class="u-name">Pulso de Éter (Clique no voo)</span><span class="u-cost" id="cost-impulse">Ecos: 10</span></div>
+            <span class="u-lvl" id="lvl-impulse">Lvl 0</span>
         </div>
         <div class="upgrade" onclick="buyUpgrade('gravity')">
-            <div><span class="u-name">Pedras Leves (Gravidade)</span><span class="u-cost" id="cost-gravity">Preço: 50</span></div>
-            <span id="lvl-gravity">Lvl 0</span>
+            <div><span class="u-name">Densidade Lunar (Gravidade)</span><span class="u-cost" id="cost-gravity">Ecos: 50</span></div>
+            <span class="u-lvl" id="lvl-gravity">Lvl 0</span>
         </div>
-        <div class="upgrade" onclick="buyUpgrade('seagull')">
-            <div><span class="u-name">Gaivota (Passiva)</span><span class="u-cost" id="cost-seagull">Preço: 200</span></div>
-            <span id="lvl-seagull">Lvl 0</span>
+        <div class="upgrade" onclick="buyUpgrade('spirit')">
+            <div><span class="u-name">Corrente Espiritual (Passiva)</span><span class="u-cost" id="cost-spirit">Ecos: 200</span></div>
+            <span class="u-lvl" id="lvl-spirit">Lvl 0</span>
         </div>
-        <button onclick="resetSave()" style="margin-top:10px; padding:8px; background:#d32f2f; color:white; border:none; border-radius:4px;">Zerar Progresso</button>
-    </div>
-
-    <div id="meter-container">
-        <div id="meter-fill"></div>
-        <div id="meter-cursor"></div>
+        <button class="reset-btn" onclick="resetSave()">Romper Ciclo (Zerar)</button>
     </div>
 
     <canvas id="gameCanvas"></canvas>
 
 <script>
 /**
- * ESTADO DO JOGO E CONFIGURAÇÃO
+ * ENGINE BASE & SETUP
  */
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 let WATER_LEVEL;
+let CENTER_X;
 function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    WATER_LEVEL = canvas.height * 0.75;
+    WATER_LEVEL = canvas.height * 0.70;
+    CENTER_X = canvas.width * 0.2; // Origem do lançamento
 }
 window.addEventListener('resize', resizeCanvas);
-resizeCanvas(); // Inicializa tamanhos
+resizeCanvas();
 
-let gameState = { currency: 0, state: 'IDLE', cameraX: 0 };
+// Game State
+let gameState = { currency: 0, state: 'IDLE', cameraX: 0, pulseRadius: 0, pulseGrowing: true };
 let upgrades = {
-    impulse: { level: 0, cost: 10, costMult: 1.5 },
+    impulse: { level: 0, cost: 10, costMult: 1.6 },
     gravity: { level: 0, cost: 50, costMult: 1.8 },
-    seagull: { level: 0, cost: 200, costMult: 2.5 }
+    spirit: { level: 0, cost: 200, costMult: 2.5 }
 };
 
-// Carregar Save Local
+// Física
+const baseGravity = 0.18;
+const waterFriction = 0.78; 
+const bounciness = 0.68; 
+const airResistance = 0.996;
+
+/**
+ * SISTEMA DE SAVE (localStorage)
+ */
 function loadData() {
-    const saved = localStorage.getItem('skipIdleSave');
+    const saved = localStorage.getItem('rippleloopSave');
     if (saved) {
         const parsed = JSON.parse(saved);
         gameState.currency = parsed.currency || 0;
@@ -102,59 +139,94 @@ function loadData() {
     }
     updateUI();
 }
-function saveData() {
-    localStorage.setItem('skipIdleSave', JSON.stringify({ currency: gameState.currency, upgrades: upgrades }));
-}
-function resetSave() {
-    localStorage.removeItem('skipIdleSave');
-    location.reload();
-}
-
-// Constantes Físicas Base
-const baseGravity = 0.2;
-const waterFriction = 0.75; 
-const bounciness = 0.65; 
-const airResistance = 0.995;
+function saveData() { localStorage.setItem('rippleloopSave', JSON.stringify({ currency: gameState.currency, upgrades })); }
+function resetSave() { localStorage.removeItem('rippleloopSave'); location.reload(); }
 
 /**
- * ENTIDADE: PEDRA
+ * EFEITOS VISUAIS: RIPPLES & PARTICLES
  */
-class Stone {
-    constructor() {
-        this.reset();
+let ripples = [];
+let trail = [];
+
+function createRipple(x, y) {
+    ripples.push({ x: x, y: y, radius: 2, maxRadius: Math.random() * 40 + 40, alpha: 1 });
+}
+
+function updateAndDrawRipples() {
+    for (let i = ripples.length - 1; i >= 0; i--) {
+        let r = ripples[i];
+        r.radius += 1.5;
+        r.alpha -= 0.015;
+        
+        if (r.alpha <= 0) {
+            ripples.splice(i, 1);
+            continue;
+        }
+        
+        ctx.beginPath();
+        ctx.ellipse(r.x - gameState.cameraX, r.y, r.radius, r.radius * 0.3, 0, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(0, 243, 255, ${r.alpha})`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
     }
+}
+
+/**
+ * ENTIDADE: O CRISTAL (Pedra)
+ */
+class Crystal {
+    constructor() { this.reset(); }
+    
     reset() {
-        this.x = canvas.width * 0.1;
-        this.y = WATER_LEVEL - 100;
+        this.x = CENTER_X;
+        this.y = WATER_LEVEL - 60;
         this.vx = 0; this.vy = 0;
         this.bounces = 0; this.distance = 0;
         this.active = false;
-        this.seagullActive = false;
-        this.seagullTimer = 0;
+        this.spiritActive = false;
+        this.spiritTimer = 0;
+        trail = [];
     }
-    launch(power) {
+
+    launch(accuracy) {
         this.reset();
-        this.vx = 8 + (power * 18); // Velocidade baseada na precisão
-        this.vy = -3 - (power * 6); // Ângulo
+        // Accuracy vai de 0 (ruim) a 1 (perfeito). Multiplicamos a força.
+        let powerObj = 10 + (accuracy * 20); 
+        this.vx = powerObj;
+        this.vy = -4 - (accuracy * 5); 
         this.active = true;
     }
+
     applyImpulse() {
-        if (upgrades.impulse.level > 0 && this.y < WATER_LEVEL && !this.seagullActive) {
-            this.vy = -4 - (upgrades.impulse.level * 0.2); // Boost para cima
-            this.vx += 1 + (upgrades.impulse.level * 0.1); // Boost para frente
+        if (upgrades.impulse.level > 0 && this.y < WATER_LEVEL && !this.spiritActive) {
+            this.vy = -3 - (upgrades.impulse.level * 0.3); // Elevação etérea
+            this.vx += 1.5 + (upgrades.impulse.level * 0.15); // Aceleração
+            // Efeito visual de pulso no ar
+            createRipple(this.x, this.y);
         }
     }
+
     update() {
         if (!this.active) return;
 
-        let currentGravity = Math.max(0.05, baseGravity - (upgrades.gravity.level * 0.015));
+        // Rastro de luz
+        if (Math.random() > 0.3) {
+            trail.push({x: this.x, y: this.y, alpha: 1, size: Math.random() * 3 + 2});
+        }
+        if (trail.length > 25) trail.shift();
 
-        if (this.seagullActive) {
-            this.seagullTimer--;
-            this.y = WATER_LEVEL - 150; 
-            this.vx = 10; 
+        let currentGravity = Math.max(0.04, baseGravity - (upgrades.gravity.level * 0.015));
+
+        // Corrente Espiritual (Gaivota do Rippleloop)
+        if (this.spiritActive) {
+            this.spiritTimer--;
+            this.y = WATER_LEVEL - 120 + Math.sin(Date.now() / 150) * 10; // Flutuação suave senoidal
+            this.vx = 12; 
             this.vy = 0;
-            if (this.seagullTimer <= 0) this.seagullActive = false;
+            if (this.spiritTimer <= 0) {
+                this.spiritActive = false;
+                this.vy = -2; // Pequeno salto ao soltar
+            }
         } else {
             this.vy += currentGravity;
             this.vx *= airResistance;
@@ -162,65 +234,128 @@ class Stone {
 
         this.x += this.vx;
         this.y += this.vy;
-        this.distance = Math.max(0, this.x - (canvas.width * 0.1));
+        this.distance = Math.max(0, this.x - CENTER_X);
 
-        // Colisão com a água
+        // Colisão com a Água Escura
         if (this.y >= WATER_LEVEL) {
             this.y = WATER_LEVEL;
-            if (this.vx > 2.5) {
+            
+            if (this.vx > 2.2) {
+                createRipple(this.x, WATER_LEVEL);
                 this.vy = -this.vy * bounciness;
                 this.vx *= waterFriction;
                 this.bounces++;
                 
-                // Chance da Gaivota baseada no nível (máx 50%)
-                let seagullChance = Math.min(0.5, upgrades.seagull.level * 0.05);
-                if (Math.random() < seagullChance) {
-                    this.seagullActive = true;
-                    this.seagullTimer = 60; // Duração do voo (frames)
+                // Chance de Invocar o Espírito (Max 50%)
+                let spiritChance = Math.min(0.5, upgrades.spirit.level * 0.05);
+                if (!this.spiritActive && Math.random() < spiritChance) {
+                    this.spiritActive = true;
+                    this.spiritTimer = 70; // Tempo voando com o espírito
+                    createRipple(this.x, WATER_LEVEL); // Ripple maior na captura
                 }
             } else {
+                // Cristal afunda e ressoa
                 this.active = false;
+                createRipple(this.x, WATER_LEVEL);
                 calculateRewards(this);
-                setTimeout(() => { gameState.state = 'IDLE'; gameState.cameraX = 0; }, 1500);
+                setTimeout(() => { 
+                    gameState.state = 'IDLE'; 
+                    gameState.cameraX = 0; 
+                    trail = [];
+                }, 1800);
             }
         }
     }
+
     draw() {
-        if (!this.active) return;
-        const screenX = this.x - gameState.cameraX;
+        if (!this.active && gameState.state !== 'IDLE' && gameState.state !== 'CHARGING') return;
         
-        ctx.fillStyle = '#444';
+        let screenX = (this.active || gameState.state === 'FLYING') ? this.x - gameState.cameraX : CENTER_X;
+        let screenY = this.y;
+
+        // Desenhar Rastro
+        ctx.globalCompositeOperation = "lighter";
+        for (let i = 0; i < trail.length; i++) {
+            let t = trail[i];
+            t.alpha -= 0.04;
+            if (t.alpha <= 0) continue;
+            ctx.beginPath();
+            ctx.arc(t.x - gameState.cameraX, t.y, t.size, 0, Math.PI*2);
+            ctx.fillStyle = `rgba(0, 243, 255, ${t.alpha})`;
+            ctx.fill();
+        }
+
+        // Desenhar Cristal
         ctx.beginPath();
-        ctx.ellipse(screenX, this.y, 10, 5, 0, 0, Math.PI * 2);
+        ctx.ellipse(screenX, screenY, 8, 4, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff';
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#00f3ff';
         ctx.fill();
-        
-        if (this.seagullActive) {
-            ctx.fillStyle = '#FFF';
-            ctx.font = "16px sans-serif";
-            ctx.fillText("🕊️", screenX - 10, this.y - 15);
+        ctx.shadowBlur = 0; // Resetar para performance
+        ctx.globalCompositeOperation = "source-over";
+
+        // Desenhar Espírito carregando (se ativo)
+        if (this.spiritActive) {
+            ctx.beginPath();
+            ctx.moveTo(screenX, screenY - 5);
+            ctx.quadraticCurveTo(screenX - 20, screenY - 20, screenX - 30, screenY - 5);
+            ctx.quadraticCurveTo(screenX - 10, screenY + 5, screenX, screenY - 5);
+            ctx.fillStyle = 'rgba(176, 82, 255, 0.7)';
+            ctx.fill();
         }
     }
 }
 
-const stone = new Stone();
+const crystal = new Crystal();
 
 /**
- * SISTEMA DE LANÇAMENTO E UI
+ * SISTEMA DE LANÇAMENTO MEDITATIVO (Anel de Ressonância)
  */
-let meterPower = 0;
-let meterDirection = 1;
-
-function updateMeter() {
+function updateChargeAura() {
     if (gameState.state !== 'CHARGING') return;
-    meterPower += 0.025 * meterDirection;
-    if (meterPower >= 1 || meterPower <= 0) meterDirection *= -1;
-    document.getElementById('meter-fill').style.width = (meterPower * 100) + '%';
+    
+    let speed = 1.5;
+    if (gameState.pulseGrowing) {
+        gameState.pulseRadius += speed;
+        if (gameState.pulseRadius > 50) gameState.pulseGrowing = false;
+    } else {
+        gameState.pulseRadius -= speed;
+        if (gameState.pulseRadius < 10) gameState.pulseGrowing = true;
+    }
+
+    // Desenha o alvo ideal (anel fixo)
+    ctx.beginPath();
+    ctx.arc(CENTER_X, crystal.y, 40, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Desenha o pulso dinâmico
+    ctx.beginPath();
+    ctx.arc(CENTER_X, crystal.y, gameState.pulseRadius, 0, Math.PI * 2);
+    
+    // Cor muda baseada na precisão (40 é o alvo ideal)
+    let diff = Math.abs(40 - gameState.pulseRadius);
+    if(diff < 5) {
+        ctx.strokeStyle = '#00f3ff'; // Perfeito = Ciano
+        ctx.shadowBlur = 10; ctx.shadowColor = '#00f3ff';
+    } else {
+        ctx.strokeStyle = `rgba(176, 82, 255, ${1 - (diff/40)})`; // Roxo fading
+    }
+    
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
 }
 
-function calculateRewards(stoneData) {
-    let flagsPassed = Math.floor(stoneData.distance / 1000);
-    let flagMultiplier = 1 + (flagsPassed * 0.5);
-    let earned = Math.floor((stoneData.distance / 10) * (1 + stoneData.bounces * 0.1) * flagMultiplier);
+/**
+ * LÓGICA DE RECOMPENSAS E UI
+ */
+function calculateRewards(cData) {
+    let lotusPassed = Math.floor(cData.distance / 1200);
+    let resonanceMultiplier = 1 + (lotusPassed * 0.8);
+    let earned = Math.floor((cData.distance / 15) * (1 + cData.bounces * 0.15) * resonanceMultiplier);
     
     gameState.currency += earned;
     saveData();
@@ -239,21 +374,21 @@ function buyUpgrade(type) {
 }
 
 function updateUI() {
-    document.getElementById('currency-display').innerText = gameState.currency;
-    document.getElementById('dist-display').innerText = Math.floor(stone.distance);
-    document.getElementById('bounce-display').innerText = stone.bounces;
+    document.getElementById('currency-display').innerText = gameState.currency.toLocaleString();
+    document.getElementById('dist-display').innerText = Math.floor(crystal.distance);
+    document.getElementById('bounce-display').innerText = crystal.bounces;
 
     for (let key in upgrades) {
         let elCost = document.getElementById(`cost-${key}`);
         let elLvl = document.getElementById(`lvl-${key}`);
         if (elCost && elLvl) {
-            elCost.innerText = `Preço: ${Math.floor(upgrades[key].cost)}`;
+            elCost.innerText = `Ecos: ${Math.floor(upgrades[key].cost).toLocaleString()}`;
             elLvl.innerText = `Lvl ${upgrades[key].level}`;
         }
     }
 }
 
-// Toggle Loja
+// Interação da Loja
 document.getElementById('shop-btn').addEventListener('pointerdown', (e) => {
     e.stopPropagation();
     const shop = document.getElementById('shop-menu');
@@ -261,76 +396,115 @@ document.getElementById('shop-btn').addEventListener('pointerdown', (e) => {
 });
 
 /**
- * CONTROLES OTIMIZADOS (POINTER EVENTS)
+ * CONTROLES (Pointer Events para Mobile & Mouse)
  */
 window.addEventListener('pointerdown', (e) => {
     if (e.target.id === 'shop-btn' || e.target.closest('#shop-menu')) return;
 
     if (gameState.state === 'IDLE') {
         gameState.state = 'CHARGING';
-        meterPower = 0;
-        document.getElementById('meter-container').style.display = 'block';
+        gameState.pulseRadius = 10;
+        gameState.pulseGrowing = true;
+        crystal.reset();
     } else if (gameState.state === 'FLYING') {
-        stone.applyImpulse();
+        crystal.applyImpulse();
     }
 });
 
 window.addEventListener('pointerup', (e) => {
     if (gameState.state === 'CHARGING') {
-        let accuracy = 1 - Math.abs(0.5 - meterPower) * 2; 
-        stone.launch(accuracy);
-        gameState.state = 'FLYING';
-        document.getElementById('meter-container').style.display = 'none';
+        // Cálculo de precisão. O raio perfeito é 40.
+        let diff = Math.abs(40 - gameState.pulseRadius);
+        // Precisão de 0 a 1.
+        let accuracy = Math.max(0, 1 - (diff / 30)); 
         
-        // Esconde a loja automaticamente ao lançar para limpar a tela no mobile
-        document.getElementById('shop-menu').style.display = 'none';
+        crystal.launch(accuracy);
+        gameState.state = 'FLYING';
+        document.getElementById('shop-menu').style.display = 'none'; // Auto-close menu
     }
 });
 
 /**
- * LOOP DE RENDERIZAÇÃO OTIMIZADO
+ * RENDERIZAÇÃO AMBIENTAL (Cenário)
  */
 function drawEnvironment() {
-    // Fundo
-    ctx.fillStyle = '#87CEEB'; // Céu
+    // Gradiente do Céu Noturno
+    let skyGrad = ctx.createLinearGradient(0, 0, 0, WATER_LEVEL);
+    skyGrad.addColorStop(0, '#030612'); // Topo muito escuro
+    skyGrad.addColorStop(1, '#0a1a2f'); // Horizonte profundo
+    ctx.fillStyle = skyGrad;
     ctx.fillRect(0, 0, canvas.width, WATER_LEVEL);
-    ctx.fillStyle = '#1CA3EC'; // Água
+
+    // Linha do Horizonte Brilhante (Água)
+    ctx.beginPath();
+    ctx.moveTo(0, WATER_LEVEL);
+    ctx.lineTo(canvas.width, WATER_LEVEL);
+    ctx.strokeStyle = 'rgba(0, 243, 255, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Gradiente da Água
+    let waterGrad = ctx.createLinearGradient(0, WATER_LEVEL, 0, canvas.height);
+    waterGrad.addColorStop(0, '#041524'); 
+    waterGrad.addColorStop(1, '#020a12');
+    ctx.fillStyle = waterGrad;
     ctx.fillRect(0, WATER_LEVEL, canvas.width, canvas.height - WATER_LEVEL);
 
-    // Renderização das bandeiras (apenas as visíveis)
-    ctx.font = "12px monospace";
-    for (let i = 1; i <= Math.max(10, Math.floor((stone.x + canvas.width) / 1000) + 2); i++) {
-        let flagX = (i * 1000) - gameState.cameraX;
-        if (flagX > -50 && flagX < canvas.width + 50) {
-            ctx.fillStyle = '#795548'; // Poste
-            ctx.fillRect(flagX, WATER_LEVEL - 40, 3, 40);
-            ctx.fillStyle = '#f44336'; // Bandeira
-            ctx.fillRect(flagX, WATER_LEVEL - 40, 25, 18);
-            ctx.fillStyle = '#fff'; // Texto
-            ctx.fillText(`x${1 + (i*0.5)}`, flagX + 4, WATER_LEVEL - 27);
+    // Renderização dos Lótus (Milestones) a cada 1200m
+    let maxLotus = Math.max(5, Math.floor((crystal.x + canvas.width) / 1200) + 2);
+    for (let i = 1; i <= maxLotus; i++) {
+        let lotusX = (i * 1200) - gameState.cameraX;
+        if (lotusX > -100 && lotusX < canvas.width + 100) {
+            // Reflexo na água
+            ctx.fillStyle = 'rgba(176, 82, 255, 0.2)';
+            ctx.beginPath();
+            ctx.ellipse(lotusX, WATER_LEVEL + 5, 20, 5, 0, 0, Math.PI*2);
+            ctx.fill();
+
+            // Flor de Lótus Minimalista
+            ctx.fillStyle = 'rgba(176, 82, 255, 0.8)';
+            ctx.beginPath();
+            ctx.moveTo(lotusX, WATER_LEVEL - 15);
+            ctx.quadraticCurveTo(lotusX - 15, WATER_LEVEL, lotusX, WATER_LEVEL);
+            ctx.quadraticCurveTo(lotusX + 15, WATER_LEVEL, lotusX, WATER_LEVEL - 15);
+            ctx.fill();
+            
+            // Texto do Multiplicador flutuando
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.font = "11px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(`x${(1 + (i*0.8)).toFixed(1)}`, lotusX, WATER_LEVEL - 25);
+            ctx.textAlign = "left"; // reset
         }
     }
 }
 
+/**
+ * LOOP PRINCIPAL
+ */
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    drawEnvironment();
+    updateAndDrawRipples();
+
     if (gameState.state === 'FLYING') {
-        stone.update();
-        if (stone.x > canvas.width * 0.4) {
-            gameState.cameraX = stone.x - (canvas.width * 0.4);
+        crystal.update();
+        // Câmera segue o cristal, mantendo-o a 20% da tela à esquerda
+        if (crystal.x > CENTER_X) {
+            // Interpolação suave de câmera (Lerp)
+            gameState.cameraX += ((crystal.x - CENTER_X) - gameState.cameraX) * 0.1;
         }
         updateUI();
     }
 
-    updateMeter();
-    drawEnvironment();
-    stone.draw();
+    updateChargeAura();
+    crystal.draw();
 
     requestAnimationFrame(gameLoop);
 }
 
-// Iniciar
+// Inicialização
 loadData();
 gameLoop();
 </script>
