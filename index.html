@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Skip & Skim: Idle Ripples</title>
+    <style>
+        /* CSS Otimizado para Mobile e Performance */
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            overflow: hidden; background-color: #87CEEB; 
+            font-family: 'Courier New', Courier, monospace; 
+            touch-action: none; /* Previne scroll e zoom no mobile */
+            user-select: none; /* Previne seleção acidental de texto */
+            -webkit-user-select: none;
+        }
+        
+        #gameCanvas { display: block; width: 100%; height: 100%; }
+        
+        #hud { position: absolute; top: 15px; left: 15px; color: #fff; text-shadow: 2px 2px 0 #000; pointer-events: none; }
+        #hud h1 { margin: 0; font-size: clamp(20px, 4vw, 28px); }
+        #hud p { margin: 5px 0 0 0; font-size: clamp(14px, 3vw, 18px); }
+        
+        #meter-container { position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%); width: clamp(150px, 40vw, 250px); height: 24px; background: #222; border: 3px solid #fff; border-radius: 12px; overflow: hidden; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        #meter-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #ff4444, #ffeb3b, #4caf50, #ffeb3b, #ff4444); }
+        #meter-cursor { position: absolute; top: 0; bottom: 0; width: 4px; background: #000; left: 50%; }
+
+        #shop-btn { position: absolute; top: 15px; right: 15px; padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; background: #fff; border: 2px solid #000; border-radius: 8px; box-shadow: 2px 2px 0 #000; transition: transform 0.1s; }
+        #shop-btn:active { transform: translate(2px, 2px); box-shadow: 0px 0px 0 #000; }
+        
+        #shop-menu { position: absolute; top: 70px; right: 15px; width: clamp(250px, 80vw, 320px); max-height: 80vh; overflow-y: auto; background: rgba(20,20,20,0.95); color: white; border: 2px solid #fff; padding: 15px; display: none; flex-direction: column; gap: 12px; border-radius: 8px; z-index: 10; }
+        #shop-menu h3 { margin: 0 0 10px 0; text-align: center; border-bottom: 1px solid #555; padding-bottom: 10px; }
+        
+        .upgrade { display: flex; justify-content: space-between; align-items: center; background: #333; padding: 15px 12px; border: 1px solid #555; border-radius: 6px; cursor: pointer; }
+        .upgrade:active { background: #555; }
+        .u-name { font-weight: bold; font-size: 14px; display: block; }
+        .u-cost { color: #ffeb3b; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <div id="hud">
+        <h1>Moedas: <span id="currency-display">0</span></h1>
+        <p>Distância: <span id="dist-display">0</span>m | Quiques: <span id="bounce-display">0</span></p>
+    </div>
+
+    <button id="shop-btn">Loja</button>
+    <div id="shop-menu">
+        <h3>Melhorias</h3>
+        <div class="upgrade" onclick="buyUpgrade('impulse')">
+            <div><span class="u-name">Impulso (Clique no ar)</span><span class="u-cost" id="cost-impulse">Preço: 10</span></div>
+            <span id="lvl-impulse">Lvl 0</span>
+        </div>
+        <div class="upgrade" onclick="buyUpgrade('gravity')">
+            <div><span class="u-name">Pedras Leves (Gravidade)</span><span class="u-cost" id="cost-gravity">Preço: 50</span></div>
+            <span id="lvl-gravity">Lvl 0</span>
+        </div>
+        <div class="upgrade" onclick="buyUpgrade('seagull')">
+            <div><span class="u-name">Gaivota (Passiva)</span><span class="u-cost" id="cost-seagull">Preço: 200</span></div>
+            <span id="lvl-seagull">Lvl 0</span>
+        </div>
+        <button onclick="resetSave()" style="margin-top:10px; padding:8px; background:#d32f2f; color:white; border:none; border-radius:4px;">Zerar Progresso</button>
+    </div>
+
+    <div id="meter-container">
+        <div id="meter-fill"></div>
+        <div id="meter-cursor"></div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+<script>
+/**
+ * ESTADO DO JOGO E CONFIGURAÇÃO
+ */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+let WATER_LEVEL;
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    WATER_LEVEL = canvas.height * 0.75;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas(); // Inicializa tamanhos
+
+let gameState = { currency: 0, state: 'IDLE', cameraX: 0 };
+let upgrades = {
+    impulse: { level: 0, cost: 10, costMult: 1.5 },
+    gravity: { level: 0, cost: 50, costMult: 1.8 },
+    seagull: { level: 0, cost: 200, costMult: 2.5 }
+};
+
+// Carregar Save Local
+function loadData() {
+    const saved = localStorage.getItem('skipIdleSave');
+    if (saved) {
+        const parsed = JSON.parse(saved);
+        gameState.currency = parsed.currency || 0;
+        if(parsed.upgrades) upgrades = parsed.upgrades;
+    }
+    updateUI();
+}
+function saveData() {
+    localStorage.setItem('skipIdleSave', JSON.stringify({ currency: gameState.currency, upgrades: upgrades }));
+}
+function resetSave() {
+    localStorage.removeItem('skipIdleSave');
+    location.reload();
+}
+
+// Constantes Físicas Base
+const baseGravity = 0.2;
+const waterFriction = 0.75; 
+const bounciness = 0.65; 
+const airResistance = 0.995;
+
+/**
+ * ENTIDADE: PEDRA
+ */
+class Stone {
+    constructor() {
+        this.reset();
+    }
+    reset() {
+        this.x = canvas.width * 0.1;
+        this.y = WATER_LEVEL - 100;
+        this.vx = 0; this.vy = 0;
+        this.bounces = 0; this.distance = 0;
+        this.active = false;
+        this.seagullActive = false;
+        this.seagullTimer = 0;
+    }
+    launch(power) {
+        this.reset();
+        this.vx = 8 + (power * 18); // Velocidade baseada na precisão
+        this.vy = -3 - (power * 6); // Ângulo
+        this.active = true;
+    }
+    applyImpulse() {
+        if (upgrades.impulse.level > 0 && this.y < WATER_LEVEL && !this.seagullActive) {
+            this.vy = -4 - (upgrades.impulse.level * 0.2); // Boost para cima
+            this.vx += 1 + (upgrades.impulse.level * 0.1); // Boost para frente
+        }
+    }
+    update() {
+        if (!this.active) return;
+
+        let currentGravity = Math.max(0.05, baseGravity - (upgrades.gravity.level * 0.015));
+
+        if (this.seagullActive) {
+            this.seagullTimer--;
+            this.y = WATER_LEVEL - 150; 
+            this.vx = 10; 
+            this.vy = 0;
+            if (this.seagullTimer <= 0) this.seagullActive = false;
+        } else {
+            this.vy += currentGravity;
+            this.vx *= airResistance;
+        }
+
+        this.x += this.vx;
+        this.y += this.vy;
+        this.distance = Math.max(0, this.x - (canvas.width * 0.1));
+
+        // Colisão com a água
+        if (this.y >= WATER_LEVEL) {
+            this.y = WATER_LEVEL;
+            if (this.vx > 2.5) {
+                this.vy = -this.vy * bounciness;
+                this.vx *= waterFriction;
+                this.bounces++;
+                
+                // Chance da Gaivota baseada no nível (máx 50%)
+                let seagullChance = Math.min(0.5, upgrades.seagull.level * 0.05);
+                if (Math.random() < seagullChance) {
+                    this.seagullActive = true;
+                    this.seagullTimer = 60; // Duração do voo (frames)
+                }
+            } else {
+                this.active = false;
+                calculateRewards(this);
+                setTimeout(() => { gameState.state = 'IDLE'; gameState.cameraX = 0; }, 1500);
+            }
+        }
+    }
+    draw() {
+        if (!this.active) return;
+        const screenX = this.x - gameState.cameraX;
+        
+        ctx.fillStyle = '#444';
+        ctx.beginPath();
+        ctx.ellipse(screenX, this.y, 10, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        if (this.seagullActive) {
+            ctx.fillStyle = '#FFF';
+            ctx.font = "16px sans-serif";
+            ctx.fillText("🕊️", screenX - 10, this.y - 15);
+        }
+    }
+}
+
+const stone = new Stone();
+
+/**
+ * SISTEMA DE LANÇAMENTO E UI
+ */
+let meterPower = 0;
+let meterDirection = 1;
+
+function updateMeter() {
+    if (gameState.state !== 'CHARGING') return;
+    meterPower += 0.025 * meterDirection;
+    if (meterPower >= 1 || meterPower <= 0) meterDirection *= -1;
+    document.getElementById('meter-fill').style.width = (meterPower * 100) + '%';
+}
+
+function calculateRewards(stoneData) {
+    let flagsPassed = Math.floor(stoneData.distance / 1000);
+    let flagMultiplier = 1 + (flagsPassed * 0.5);
+    let earned = Math.floor((stoneData.distance / 10) * (1 + stoneData.bounces * 0.1) * flagMultiplier);
+    
+    gameState.currency += earned;
+    saveData();
+    updateUI();
+}
+
+function buyUpgrade(type) {
+    let upg = upgrades[type];
+    if (gameState.currency >= Math.floor(upg.cost)) {
+        gameState.currency -= Math.floor(upg.cost);
+        upg.level++;
+        upg.cost *= upg.costMult;
+        saveData();
+        updateUI();
+    }
+}
+
+function updateUI() {
+    document.getElementById('currency-display').innerText = gameState.currency;
+    document.getElementById('dist-display').innerText = Math.floor(stone.distance);
+    document.getElementById('bounce-display').innerText = stone.bounces;
+
+    for (let key in upgrades) {
+        let elCost = document.getElementById(`cost-${key}`);
+        let elLvl = document.getElementById(`lvl-${key}`);
+        if (elCost && elLvl) {
+            elCost.innerText = `Preço: ${Math.floor(upgrades[key].cost)}`;
+            elLvl.innerText = `Lvl ${upgrades[key].level}`;
+        }
+    }
+}
+
+// Toggle Loja
+document.getElementById('shop-btn').addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    const shop = document.getElementById('shop-menu');
+    shop.style.display = shop.style.display === 'flex' ? 'none' : 'flex';
+});
+
+/**
+ * CONTROLES OTIMIZADOS (POINTER EVENTS)
+ */
+window.addEventListener('pointerdown', (e) => {
+    if (e.target.id === 'shop-btn' || e.target.closest('#shop-menu')) return;
+
+    if (gameState.state === 'IDLE') {
+        gameState.state = 'CHARGING';
+        meterPower = 0;
+        document.getElementById('meter-container').style.display = 'block';
+    } else if (gameState.state === 'FLYING') {
+        stone.applyImpulse();
+    }
+});
+
+window.addEventListener('pointerup', (e) => {
+    if (gameState.state === 'CHARGING') {
+        let accuracy = 1 - Math.abs(0.5 - meterPower) * 2; 
+        stone.launch(accuracy);
+        gameState.state = 'FLYING';
+        document.getElementById('meter-container').style.display = 'none';
+        
+        // Esconde a loja automaticamente ao lançar para limpar a tela no mobile
+        document.getElementById('shop-menu').style.display = 'none';
+    }
+});
+
+/**
+ * LOOP DE RENDERIZAÇÃO OTIMIZADO
+ */
+function drawEnvironment() {
+    // Fundo
+    ctx.fillStyle = '#87CEEB'; // Céu
+    ctx.fillRect(0, 0, canvas.width, WATER_LEVEL);
+    ctx.fillStyle = '#1CA3EC'; // Água
+    ctx.fillRect(0, WATER_LEVEL, canvas.width, canvas.height - WATER_LEVEL);
+
+    // Renderização das bandeiras (apenas as visíveis)
+    ctx.font = "12px monospace";
+    for (let i = 1; i <= Math.max(10, Math.floor((stone.x + canvas.width) / 1000) + 2); i++) {
+        let flagX = (i * 1000) - gameState.cameraX;
+        if (flagX > -50 && flagX < canvas.width + 50) {
+            ctx.fillStyle = '#795548'; // Poste
+            ctx.fillRect(flagX, WATER_LEVEL - 40, 3, 40);
+            ctx.fillStyle = '#f44336'; // Bandeira
+            ctx.fillRect(flagX, WATER_LEVEL - 40, 25, 18);
+            ctx.fillStyle = '#fff'; // Texto
+            ctx.fillText(`x${1 + (i*0.5)}`, flagX + 4, WATER_LEVEL - 27);
+        }
+    }
+}
+
+function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (gameState.state === 'FLYING') {
+        stone.update();
+        if (stone.x > canvas.width * 0.4) {
+            gameState.cameraX = stone.x - (canvas.width * 0.4);
+        }
+        updateUI();
+    }
+
+    updateMeter();
+    drawEnvironment();
+    stone.draw();
+
+    requestAnimationFrame(gameLoop);
+}
+
+// Iniciar
+loadData();
+gameLoop();
+</script>
+</body>
+</html>
